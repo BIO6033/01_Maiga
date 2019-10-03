@@ -1,0 +1,94 @@
+---
+title: "visualisation_WWC"
+author: "Maiga"
+date: "01/10/2019"
+output: 
+  html_document:
+    keep_md: true
+   
+---
+
+Ojectif du projet:
+Je suppose que je travaille pour une Compagnie qui veut faire du bussiness autour de la WWC. Comme par exemple founir un service aux equipes participantes. Ma compagnie souhaite cependant se focaliser sur une ou deux equipes d'interet.
+
+
+```{r}
+# Installation des librarys 
+
+library(tidyverse)
+wwc_outcomes <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-07-09/wwc_outcomes.csv")
+
+```
+Pour avoir une idée du contenu des données utilisations de glimpse.
+En cliquant aussi sur les données dans la fenetre global environment on arrive a visualiser le contenu qui s'affiche sous forme de table.
+Brievement le tableau donne les statistiques par année (score = nombre de buts, le niveau de la competition = round, le win_status) de chaque equipe participante. On a egalement le nombre de matchs jouer = yearly_game_id 
+
+```{r}
+glimpse(wwc_outcomes)
+```
+
+En premier je me pose comme question: Est ce une competition perenne? L'entreprise vise t elle quelque chose prometrice. Par exemple la competition s'ameliore t-elle au fil des années? ou regresse t elle? 
+Je pense pouvoir repondre a cette question en etudiant l'evolution du nombre de match par année.
+
+```{r}
+#Calcul du nombre maximum de match par an, je sauvegarde ce calcul comme g pour l'utiliser plutard par ggplot.
+
+g = wwc_outcomes %>%
+       group_by(year)%>%
+          summarise(nomber_of_game = max(yearly_game_id))
+                    
+ggplot (g, aes(x=year, y=nomber_of_game)) + geom_line( color = 'blue')
+```
+Interpretation: Le wwc existe depuis 30 ans avec des nombres de match qui sont passés de 25 environ a plus de 50 en 30 ans. La competion semble perenne.
+
+Question suivante:
+Quel equipe serait la plus interessante a viser pour ce bussiness?
+Pour maximiser la chance de ma compagnie de proposer un servise plus long, il serait plus avantageux de choisir un pays qui participe souvent et qui a la chance d aller loin dans la competition.En d'autre terme on recherche une equipe performante.  
+
+Pour ce faire, etudions le nombre de but marrqué par equipe chaque année.
+```{r}
+ggplot(wwc_outcomes, aes(x=year, y= score)) + geom_point() + facet_wrap(~team)
+
+```
+
+Les equipe qui semblent constantes et qui scorent le plus sont: GER, NOR, USA.
+
+Focalisons sur ces 3 pays.
+```{r}
+# Utilisation de filter pour selectionner les 3 teams.
+b= wwc_outcomes %>%
+        filter(team == 'USA'|team == 'GER' | team == 'NOR' )
+b
+ggplot(b, aes(x=year, y= score, color = score)) + geom_point() + facet_wrap(~team)
+```
+	
+	On confirme que ces 3 pays sont constantes pour ce qui est de la participation a cette competion. Elles marquent beaucoup de buts a plusieurs de leurs rencontres. 
+	
+	Pour team USA quel serait la repartition des scores en fonction des phases de la competion?
+```{r}
+a = wwc_outcomes %>%
+     select(year, score, team, round)%>%
+        filter(team == 'USA')%>%
+          arrange(round)
+
+a
+ggplot(a, aes(x=year, y = score, group= round)) + geom_point(aes (color= round))+ facet_wrap(~round)
+```
+	
+Les trois equipes semblentde bons choix pour les departager on pourrait regarder laquelle a disputer le plus de finales et emporter le plus la competition
+
+```{r}
+#Filtre sur la final avant de filtrer sur les equipes
+a = wwc_outcomes %>%
+     select(year, score, team, round, win_status)%>%
+        filter(round== 'Final')%>% 
+        filter(team == 'USA'|team == 'GER' | team == 'NOR' )
+a 
+ggplot(a, aes(x=team, y=year, color = win_status)) + geom_point()
+ggplot(a, aes(x=team, y=year)) + geom_boxplot(aes(fill = win_status))
+ggplot(a, aes(team)) + geom_bar(aes(fill = win_status))
+```
+	
+	Je trouve la representation en point beaucoups plus informative que les barres.
+	On voit ainsi que les USA se departagent du lot avec 5 finales jouées dont 4 remportées.
+	
